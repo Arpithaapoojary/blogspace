@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 export default function Login() {
   const { login } = useAuth();
@@ -18,7 +19,11 @@ export default function Login() {
     if (!form.email || !form.password) return setError('Please fill in all fields.');
     setLoading(true); setError('');
     try {
-      await login(form.email, form.password);
+      const { data } = await api.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
+      login(data);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.');

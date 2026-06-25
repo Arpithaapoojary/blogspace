@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [showPass, setShowPass] = useState(false);
@@ -20,7 +21,12 @@ export default function Register() {
     if (form.password.length < 6) return setError('Password must be at least 6 characters.');
     setLoading(true); setError('');
     try {
-      await register(form.name, form.email, form.password);
+      const { data } = await api.post('/auth/register', {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+      login(data);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
