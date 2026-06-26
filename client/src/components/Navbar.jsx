@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   PenSquare, Sun, Moon, Menu, X, ChevronDown, Search,
-  User, LayoutDashboard, Settings, LogOut, Home, Info, Mail
+  User, LayoutDashboard, Settings, LogOut, Home, Info, Mail, Bell, Shield
 } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
+import api from '../utils/api';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -18,9 +19,14 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -29,13 +35,39 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (user) {
+      api.get('/notifications').then(res => {
+        setNotifications(res.data.notifications);
+        setUnreadCount(res.data.unreadCount);
+      }).catch(err => console.error(err));
+    }
+  }, [user]);
+
+  useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
       if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      setNotifications(notifications.map(n => n._id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {}
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {}
+  };
 
   const handleLogout = () => {
     logout();
@@ -105,6 +137,39 @@ export default function Navbar() {
                   <span className="navbar__write-text">Write</span>
                 </Link>
 
+                {/* Notifications dropdown */}
+                <div ref={notifRef} style={{ position: 'relative' }}>
+                  <button className="btn btn-ghost btn-icon btn-sm navbar__icon-btn" style={{ position: 'relative' }} onClick={() => setNotifOpen(o => !o)} aria-label="Notifications">
+                    <Bell size={16} />
+                    {unreadCount > 0 && <span className="navbar__notif-badge">{unreadCount}</span>}
+                  </button>
+                  {notifOpen && (
+                    <div className="navbar__dropdown scale-in" style={{ width: 300 }}>
+                      <div className="navbar__dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <p className="navbar__dropdown-name">Notifications</p>
+                        {unreadCount > 0 && (
+                          <button onClick={handleMarkAllRead} className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.25rem' }}>Mark all read</button>
+                        )}
+                      </div>
+                      <div className="navbar__dropdown-divider" />
+                      <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                          <p style={{ padding: '1rem', textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.875rem' }}>No notifications yet.</p>
+                        ) : (
+                          notifications.map(n => (
+                            <div key={n._id} onClick={() => !n.read && handleMarkAsRead(n._id)} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-subtle)', cursor: 'pointer' }}>
+                              <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                                <strong>{n.sender.name}</strong> {n.type === 'follow' ? 'started following you.' : n.type === 'like' ? 'liked your post.' : 'commented on your post.'}
+                              </p>
+                              {n.post && <p style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', marginTop: '0.25rem' }}>{n.post.title}</p>}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* User dropdown */}
                 <div ref={dropdownRef} className="navbar__dropdown-wrap">
                   <button className="navbar__avatar-btn" onClick={() => setDropdownOpen(o => !o)}>
@@ -125,6 +190,11 @@ export default function Navbar() {
                       <Link to="/settings" className="navbar__dropdown-item" onClick={() => setDropdownOpen(false)}>
                         <Settings size={15} /> Settings
                       </Link>
+                      {user.role === 'admin' && (
+                        <Link to="/admin" className="navbar__dropdown-item" onClick={() => setDropdownOpen(false)}>
+                          <Shield size={15} /> Admin Dashboard
+                        </Link>
+                      )}
                       <div className="navbar__dropdown-divider" />
                       <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={handleLogout}>
                         <LogOut size={15} /> Sign out
@@ -252,6 +322,20 @@ export default function Navbar() {
         }
         .navbar__icon-btn { color: var(--fg-muted) !important; }
         .navbar__icon-btn:hover { color: var(--fg-base) !important; }
+
+        .navbar__notif-badge {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          background: var(--primary);
+          color: white;
+          font-size: 0.625rem;
+          font-weight: 700;
+          padding: 0 4px;
+          border-radius: 10px;
+          min-width: 14px;
+          text-align: center;
+        }
 
         /* Search popup */
         .navbar__search-popup {

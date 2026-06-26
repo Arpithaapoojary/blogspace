@@ -63,10 +63,33 @@ export default function SinglePost() {
     } catch {}
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    const shareData = {
+      title: post?.title,
+      text: `Check out this post: ${post?.title}`,
+      url: window.location.href,
+    };
+    // Try native share first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {}
+    }
+    // Fallback: copy link
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleShareTwitter = () => {
+    const text = encodeURIComponent(`${post?.title} - ${window.location.href}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener');
+  };
+
+  const handleShareLinkedIn = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'noopener');
   };
 
   if (loading) return <div className="loading-container" style={{ minHeight: '60vh' }}><div className="spinner spinner-lg" /><span>Loading post…</span></div>;
@@ -85,6 +108,8 @@ export default function SinglePost() {
   );
 
   const isAuthor = user && (user.id === post.author?._id || user._id === post.author?._id);
+  const isAdmin = user && user.role === 'admin';
+  const canModify = isAuthor || isAdmin;
 
   return (
     <main className="page-wrapper">
@@ -132,11 +157,13 @@ export default function SinglePost() {
                 </div>
               </Link>
 
-              {isAuthor && (
+              {canModify && (
                 <div className="sp-author-actions">
-                  <Link to={`/edit/${post._id}`} className="btn btn-secondary btn-sm">
-                    <Edit size={13} /> Edit
-                  </Link>
+                  {isAuthor && (
+                    <Link to={`/edit/${post._id}`} className="btn btn-secondary btn-sm">
+                      <Edit size={13} /> Edit
+                    </Link>
+                  )}
                   <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
                     {deleting ? <span className="spinner" style={{ width: 13, height: 13 }} /> : <Trash2 size={13} />}
                     Delete
@@ -160,11 +187,22 @@ export default function SinglePost() {
               </button>
               <button className={`sp-action-btn${bookmarked ? ' active-bookmark' : ''}`} onClick={handleBookmark}>
                 <Bookmark size={17} fill={bookmarked ? 'currentColor' : 'none'} />
+                <span>Bookmark</span>
               </button>
-              <button className="sp-action-btn" onClick={handleShare} title="Copy link">
-                <Share2 size={17} />
-                <span>{copied ? 'Copied!' : 'Share'}</span>
-              </button>
+              <div className="sp-share-group">
+                <button className="sp-action-btn" onClick={handleShare} title="Copy link">
+                  <Share2 size={17} />
+                  <span>{copied ? '✓ Copied!' : 'Share'}</span>
+                </button>
+                <button className="sp-action-btn sp-action-btn--twitter" onClick={handleShareTwitter} title="Share on Twitter">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.738l7.73-8.835L1.254 2.25H8.08l4.259 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  <span>X</span>
+                </button>
+                <button className="sp-action-btn sp-action-btn--linkedin" onClick={handleShareLinkedIn} title="Share on LinkedIn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  <span>LinkedIn</span>
+                </button>
+              </div>
             </div>
 
             <div className="divider" style={{ margin: '1.5rem 0' }} />
@@ -243,7 +281,9 @@ export default function SinglePost() {
         .sp-actions-bar {
           display: flex; align-items: center; gap: 0.75rem;
           padding: 1rem 0;
+          flex-wrap: wrap;
         }
+        .sp-share-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .sp-action-btn {
           display: inline-flex; align-items: center; gap: 0.375rem;
           padding: 0.5rem 0.875rem;
@@ -255,6 +295,8 @@ export default function SinglePost() {
         .sp-action-btn:hover { border-color: var(--border-hover); color: var(--fg-base); background: var(--bg-subtle); }
         .sp-action-btn.active-like { color: #f31260; border-color: rgba(243,18,96,0.3); background: rgba(243,18,96,0.06); }
         .sp-action-btn.active-bookmark { color: var(--accent); border-color: rgba(0,112,243,0.3); background: rgba(0,112,243,0.06); }
+        .sp-action-btn--twitter:hover { color: #000; border-color: #000; background: rgba(0,0,0,0.05); }
+        .sp-action-btn--linkedin:hover { color: #0077b5; border-color: #0077b5; background: rgba(0,119,181,0.06); }
 
         .sp-author-card {
           display: flex; align-items: flex-start; gap: 1rem;

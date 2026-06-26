@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Post = require('../models/Post');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // @desc    Get all posts (with search, sort, pagination)
 // @route   GET /api/posts
@@ -60,6 +61,43 @@ const getPostById = async (req, res, next) => {
     await post.save();
 
     res.json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get feed (posts from followed users)
+// @route   GET /api/posts/feed
+// @access  Private
+const getFeed = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 9 } = req.query;
+    const currentUser = await User.findById(req.user.id);
+    
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    const query = {
+      author: { $in: currentUser.following },
+      status: 'published'
+    };
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [posts, total] = await Promise.all([
+      Post.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate('author', 'name avatar'),
+      Post.countDocuments(query),
+    ]);
+
+    res.json({
+      posts,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+    });
   } catch (err) {
     next(err);
   }
@@ -135,7 +173,7 @@ const deletePost = async (req, res, next) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    if (post.author.toString() !== req.user.id) {
+    if (post.author.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete this post' });
     }
 
@@ -224,6 +262,16 @@ const toggleLike = async (req, res, next) => {
       post.likes.pull(req.user.id);
     } else {
       post.likes.push(req.user.id);
+      
+      // Create notification
+      if (post.author.toString() !== req.user.id) {
+        await Notification.create({
+          recipient: post.author,
+          sender: req.user.id,
+          type: 'like',
+          post: post._id
+        });
+      }
     }
     
     await post.save();
@@ -268,6 +316,7 @@ module.exports = {
   deletePost,
   getPostsByTag,
   getPostsByUser,
+  getFeed,
   toggleLike,
   toggleBookmark
 };

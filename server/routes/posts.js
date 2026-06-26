@@ -8,6 +8,7 @@ const {
   deletePost,
   getPostsByTag,
   getPostsByUser,
+  getFeed,
   toggleLike,
   toggleBookmark
 } = require('../controllers/postController');
@@ -16,6 +17,7 @@ const { protect, optionalAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // IMPORTANT: specific routes must come before /:id
+router.get('/feed', protect, getFeed);
 router.get('/tag/:tag', getPostsByTag);
 router.get('/user/:userId', protect, getPostsByUser); // Using protect tentatively so req.user is available for draft checking, wait, if no token, auth middleware returns 401. Let's make a custom middleware or just let auth be optional.
 

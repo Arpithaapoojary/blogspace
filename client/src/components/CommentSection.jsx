@@ -8,7 +8,7 @@ import { formatDate, getInitials } from '../utils/helpers';
 export default function CommentSection({ postId }) {
   const { user } = useAuth();
   const [comments, setComments] = useState([]);
-  const [body, setBody] = useState('');
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
@@ -23,12 +23,12 @@ export default function CommentSection({ postId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!content.trim()) return;
     setLoading(true); setError('');
     try {
-      const { data } = await api.post(`/comments/${postId}`, { body });
+      const { data } = await api.post(`/comments/${postId}`, { content });
       setComments(prev => [data, ...prev]);
-      setBody('');
+      setContent('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to post comment.');
     } finally {
@@ -66,13 +66,13 @@ export default function CommentSection({ postId }) {
               ref={textareaRef}
               className="form-input comments__textarea"
               placeholder="Share your thoughts…"
-              value={body}
-              onChange={e => setBody(e.target.value)}
+              value={content}
+              onChange={e => setContent(e.target.value)}
               rows={3}
             />
             {error && <p className="form-error">{error}</p>}
             <div className="comments__compose-actions">
-              <button className="btn btn-primary btn-sm" type="submit" disabled={loading || !body.trim()}>
+              <button className="btn btn-primary btn-sm" type="submit" disabled={loading || !content.trim()}>
                 {loading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Send size={13} />}
                 Post
               </button>
@@ -102,7 +102,7 @@ export default function CommentSection({ postId }) {
                   <Link to={`/profile/${c.author?._id}`} className="comment__author">{c.author?.name}</Link>
                   <span className="comment__date">{formatDate(c.createdAt)}</span>
                 </div>
-                <p className="comment__text">{c.body}</p>
+                <p className="comment__text">{c.content}</p>
               </div>
               {user && user.id === c.author?._id && (
                 <button className="btn btn-ghost btn-icon btn-xs comment__delete" onClick={() => handleDelete(c._id)}>

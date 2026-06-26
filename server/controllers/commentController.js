@@ -1,5 +1,6 @@
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
+const Notification = require('../models/Notification');
 
 // @desc    Get comments for a post
 // @route   GET /api/comments/:postId
@@ -40,6 +41,16 @@ const addComment = async (req, res, next) => {
     await Post.findByIdAndUpdate(req.params.postId, {
       $inc: { commentsCount: 1 },
     });
+
+    // Create notification for post author
+    if (post.author.toString() !== req.user.id) {
+      await Notification.create({
+        recipient: post.author,
+        sender: req.user.id,
+        type: 'comment',
+        post: post._id
+      });
+    }
 
     await comment.populate('author', 'name avatar');
     res.status(201).json(comment);

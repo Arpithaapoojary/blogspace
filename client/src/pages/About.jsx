@@ -1,11 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PenSquare, Users, Globe, Zap } from 'lucide-react';
 
-const TEAM = [
-  { name: 'Alex Carter', role: 'Founder & Developer', initials: 'AC' },
-  { name: 'Priya Mehta', role: 'Product Designer', initials: 'PM' },
-  { name: 'Jordan Lee', role: 'Backend Engineer', initials: 'JL' },
-];
 
 const VALUES = [
   { icon: <PenSquare size={20} />, title: 'Open Writing', desc: 'We believe in the power of open expression. Anyone can publish their ideas.' },
@@ -48,21 +43,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Team */}
-      <section className="section" style={{ background: 'var(--bg-subtle)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div className="container">
-          <h2 className="about-section-title fade-in-up">The team</h2>
-          <div className="about-team fade-in-up delay-100">
-            {TEAM.map(m => (
-              <div key={m.name} className="about-team-card">
-                <span className="avatar avatar-xl" style={{ margin: '0 auto 1rem', display: 'flex' }}>{m.initials}</span>
-                <div className="about-team-name">{m.name}</div>
-                <div className="about-team-role">{m.role}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="section">
@@ -94,10 +74,7 @@ export default function About() {
         .about-value-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
         .about-value-desc { font-size: 0.875rem; color: var(--fg-muted); line-height: 1.6; }
 
-        .about-team { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; }
-        .about-team-card { text-align: center; padding: 2rem 1rem; }
-        .about-team-name { font-weight: 700; margin-bottom: 0.25rem; }
-        .about-team-role { font-size: 0.875rem; color: var(--fg-muted); }
+
 
         .about-cta { text-align: center; }
         .about-cta-title { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; }

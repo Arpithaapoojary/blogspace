@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, TrendingUp, Sparkles, PenSquare, ArrowRight, X, SearchX } from 'lucide-react';
+import { Search, TrendingUp, Sparkles, PenSquare, ArrowRight, X, SearchX, Users } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -18,16 +18,24 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [sort, setSort] = useState('latest');
+  const [feedTab, setFeedTab] = useState('global'); // 'global' | 'following'
 
   const fetchPosts = useCallback(async (pageNum = 1, append = false) => {
     try {
       if (pageNum === 1) setLoading(true);
       else setLoadingMore(true);
 
-      const params = { page: pageNum, limit: 9, sort };
-      if (search.trim()) params.search = search.trim();
+      let data;
+      if (feedTab === 'following' && user) {
+        const res = await api.get('/posts/feed', { params: { page: pageNum, limit: 9 } });
+        data = res.data;
+      } else {
+        const params = { page: pageNum, limit: 9, sort };
+        if (search.trim()) params.search = search.trim();
+        const res = await api.get('/posts', { params });
+        data = res.data;
+      }
 
-      const { data } = await api.get('/posts', { params });
       setPosts(prev => append ? [...prev, ...data.posts] : data.posts);
       setTotal(data.total);
       setTotalPages(data.pages);
@@ -36,16 +44,16 @@ export default function Home() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [search, sort]);
+  }, [search, sort, feedTab, user]);
 
-  // Debounce search
+  // Re-fetch when tab, search, or sort changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
       fetchPosts(1);
     }, 350);
     return () => clearTimeout(timer);
-  }, [search, sort]);
+  }, [search, sort, feedTab]);
 
   const handleLoadMore = () => {
     const next = page + 1;
@@ -100,7 +108,8 @@ export default function Home() {
       {/* ── FEED ── */}
       <section className="section">
         <div className="container">
-          {/* Search & Controls */}
+          {/* Search & Controls — only shown on global feed */}
+          {feedTab === 'global' && (
           <div className="home-controls fade-in-up">
             <div className="home-search-wrap">
               <Search size={15} className="home-search-icon" />
@@ -126,6 +135,25 @@ export default function Home() {
               ))}
             </div>
           </div>
+          )}
+
+          {/* Feed Tab Selector */}
+          {user && (
+            <div className="home-feed-tabs fade-in-up">
+              <button
+                className={`home-feed-tab${feedTab === 'global' ? ' active' : ''}`}
+                onClick={() => setFeedTab('global')}
+              >
+                🌐 Global
+              </button>
+              <button
+                className={`home-feed-tab${feedTab === 'following' ? ' active' : ''}`}
+                onClick={() => setFeedTab('following')}
+              >
+                <Users size={14} /> Following
+              </button>
+            </div>
+          )}
 
           {/* Tags row */}
           {!search && (
@@ -152,9 +180,13 @@ export default function Home() {
           ) : posts.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SearchX size={32} /></div>
-              <h3>{search ? 'No results found' : 'No posts yet'}</h3>
-              <p>{search ? `Try a different search term.` : 'Be the first to publish something!'}</p>
-              {user && <Link to="/create" className="btn btn-primary btn-sm"><PenSquare size={14} /> Write the first post</Link>}
+              <h3>{feedTab === 'following' ? 'Nothing in your feed yet' : search ? 'No results found' : 'No posts yet'}</h3>
+              <p>{feedTab === 'following' ? 'Follow some authors to see their posts here!' : search ? `Try a different search term.` : 'Be the first to publish something!'}</p>
+              {feedTab === 'following' ? (
+                <Link to="/" onClick={() => setFeedTab('global')} className="btn btn-secondary btn-sm">Browse global feed</Link>
+              ) : (
+                user && <Link to="/create" className="btn btn-primary btn-sm"><PenSquare size={14} /> Write the first post</Link>
+              )}
             </div>
           ) : (
             <>
@@ -277,6 +309,20 @@ export default function Home() {
           font-size: 0.9375rem; color: var(--fg-muted);
           margin-bottom: 1.5rem;
         }
+
+        /* Feed tabs */
+        .home-feed-tabs {
+          display: flex; gap: 0.5rem; margin-bottom: 1.25rem;
+        }
+        .home-feed-tab {
+          display: inline-flex; align-items: center; gap: 0.375rem;
+          padding: 0.4rem 1.1rem; border-radius: var(--r-full);
+          border: 1px solid var(--border); background: none; cursor: pointer;
+          font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted);
+          font-family: var(--font-sans); transition: all 0.15s;
+        }
+        .home-feed-tab:hover { border-color: var(--border-hover); color: var(--fg-base); }
+        .home-feed-tab.active { background: var(--fg-base); color: var(--bg-base); border-color: var(--fg-base); }
       `}</style>
     </main>
   );
