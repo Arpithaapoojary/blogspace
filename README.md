@@ -2,7 +2,7 @@
 
 BlogSpace is a full-stack MERN (MongoDB, Express, React, Node.js) blogging platform. It allows users to register, write rich markdown posts, follow other authors, and interact through likes and comments. It features a complete Admin Dashboard for moderation, along with comprehensive data validations and cascading deletes.
 
-## 🚀 Features
+## Features
 
 - **Robust Authentication:** JWT-based user registration and login with bcrypt password hashing. Includes strong password validation (min 8 chars, uppercase, number, special char).
 - **Admin Dashboard:** Special `admin` role with a dedicated dashboard to view all users and posts. Admins can perform cascading deletes (removing a user also cleans up their posts, comments, likes, and followers).
@@ -12,14 +12,14 @@ BlogSpace is a full-stack MERN (MongoDB, Express, React, Node.js) blogging platf
 - **Tags & Search:** Filter posts by clicking tags, sort by latest/likes/views, or use the real-time search bar.
 - **Premium Design:** Modern, responsive UI with glassmorphism, dark theme, fluid layouts, and micro-animations.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend:** React 18, React Router v6, Axios, Vanilla CSS with custom properties, Lucide React (icons).
 - **Backend:** Node.js, Express.js, express-validator.
 - **Database:** MongoDB & Mongoose.
 - **Security:** `jsonwebtoken`, `bcryptjs`.
 
-## 📦 Local Setup
+## Local Setup
 
 ### 1. Prerequisites
 - Node.js (v16+)
@@ -46,14 +46,14 @@ BlogSpace is a full-stack MERN (MongoDB, Express, React, Node.js) blogging platf
 2. Install dependencies: `npm install`
 3. Start the Vite dev server: `npm run dev` (Runs on `http://localhost:5173`)
 
-## 🛣️ Core API Endpoints
+## Core API Endpoints
 
 - **Auth:** `POST /api/auth/register`, `POST /api/auth/login`
 - **Users:** `GET /api/users/:id`, `PUT /api/users/profile`, `POST /api/users/:id/follow`, `DELETE /api/users/:id` (Admin)
 - **Posts:** `GET /api/posts`, `GET /api/posts/feed`, `POST /api/posts`, `PUT /api/posts/:id`, `DELETE /api/posts/:id`
 - **Comments:** `POST /api/comments/:postId`, `DELETE /api/comments/:id`
 
-## 🚀 Deployment
+## Deployment
 
 - **Frontend:** Ready to be deployed on platforms like **Vercel** or **Netlify**. Simply connect your GitHub repository and point the build directory to the `client` folder.
 - **Backend:** Ready to be deployed on platforms like **Render**, **Heroku**, or **Railway**. Connect your repository, set the build directory to the `server` folder, and make sure to inject all the variables from your `.env` file into the platform's environment variables settings.
